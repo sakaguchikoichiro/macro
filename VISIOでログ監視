@@ -1,0 +1,140 @@
+﻿Sub VISIOでログ監視()
+' 監視するファイルの設定
+fil_path = "C:\Users\xxxxxx\Desktop\testlog.txt"
+
+Set FSO = CreateObject("Scripting.FileSystemObject")
+
+' (変更前)ファイルの更新日時の取得
+file_dtm1 = ""
+If FSO.FileExists(fil_path) Then
+    file_dtm1 = FSO.GetFile(fil_path).DateLastModified
+End If
+
+Do
+    ' (変更後)ファイルの更新日時の取得
+    file_dtm2 = ""
+    If FSO.FileExists(fil_path) Then
+        file_dtm2 = FSO.GetFile(fil_path).DateLastModified
+    End If
+
+    ' 変更前後のファイル更新日時を比較
+    If file_dtm1 <> file_dtm2 Then
+        If file_dtm1 <> "" And file_dtm2 <> "" Then
+            
+        Dim buf As String
+        Dim LastRow As Long
+        Dim LastRowText As String
+        Dim FSO2 As Object
+        
+        Const Target As String = "C:\Users\xxxxxx\Desktop\testlog.txt"
+        
+        Set FSO2 = CreateObject("Scripting.FileSystemObject")
+        With FSO2.OpenTextFile(Target, 1)
+            buf = .ReadAll
+            .Close
+        End With
+        Set FSO2 = Nothing
+        LastRow = UBound(Split(buf, vbCrLf)) - 1
+        LastRowText = Split(buf, vbCrLf)(LastRow)
+        
+        Dim shp As Visio.Shape
+        Dim shp2 As Visio.Shape
+        Dim layerObj As Visio.Layer
+        
+        Dim I As Long
+        Dim N As Long
+        
+        Dim hostnameCellObj1 As Visio.Cell
+        Dim hostnameCellObj2 As Visio.Cell
+        
+        Dim hostnameCellObj1Value As String
+        Dim hostnameCellObj2Value As String
+        
+        'Enable diagram services
+        Dim DiagramServices As Integer
+        DiagramServices = ActiveDocument.DiagramServicesEnabled
+        ActiveDocument.DiagramServicesEnabled = visServiceVersion140
+        
+        Dim UndoScopeID1 As Long
+        UndoScopeID1 = Application.BeginUndoScope("テキストのプロパティ")
+        
+        For Each shp In ActivePage.Shapes
+        
+            If shp.CellExists("Prop._VisDM_名.Value", visExistsLocally) Then
+                Set hostnameCellObj1 = shp.Cells("Prop._VisDM_名.Value")
+                hostnameCellObj1Value = hostnameCellObj1.ResultStr("")
+        
+                If IsNull(hostnameCellObj1Value) = False And hostnameCellObj1Value <> "" And InStr(LastRowText, hostnameCellObj1Value) <> 0 Then
+                    shp.CellsSRC(visSectionObject, visRowText, visTxtBlkBkgnd).FormulaU = "THEMEGUARD(RGB(255,0,0)+1)"
+                    Application.EndUndoScope UndoScopeID1, True
+                    
+                    'Restore diagram services
+                    ActiveDocument.DiagramServicesEnabled = DiagramServices
+                    'Exit Do
+                End If
+                
+            End If
+            
+            If shp.CellExists("Prop._VisDM_名_2.Value", visExistsLocally) Then
+                Set hostnameCellObj2 = shp.Cells("Prop._VisDM_名_2.Value")
+                hostnameCellObj2Value = hostnameCellObj2.ResultStr("")
+        
+                If IsNull(hostnameCellObj2Value) = False And hostnameCellObj2Value <> "" And InStr(LastRowText, hostnameCellObj2Value) <> 0 Then
+                    shp.CellsSRC(visSectionObject, visRowText, visTxtBlkBkgnd).FormulaU = "THEMEGUARD(RGB(255,0,0)+1)"
+                    Application.EndUndoScope UndoScopeID1, True
+                        
+                    'Restore diagram services
+                    ActiveDocument.DiagramServicesEnabled = DiagramServices
+                    'Exit Do
+                End If
+                
+            End If
+            
+        Next
+        
+        MsgBox "アラートを検知しました→" & " " & LastRowText
+        'Exit Do
+            
+        ElseIf file_dtm1 <> "" Then
+            MsgBox "ログファイルが削除されました"
+            Exit Do
+            
+        Else
+            MsgBox "ログファイルが新規作成されました"
+            Exit Do
+            
+        End If
+    End If
+
+    ' 変更後日時を変更前日時として設定
+    file_dtm1 = file_dtm2
+Loop
+
+Set FSO = Nothing
+
+End Sub
+
+Sub テキスト背景を無色に変更()
+        
+Dim shp As Visio.Shape
+        
+'Enable diagram services
+Dim DiagramServices As Integer
+DiagramServices = ActiveDocument.DiagramServicesEnabled
+ActiveDocument.DiagramServicesEnabled = visServiceVersion140
+        
+Dim UndoScopeID1 As Long
+UndoScopeID1 = Application.BeginUndoScope("テキストのプロパティ")
+        
+    For Each shp In ActivePage.Shapes
+        
+        shp.CellsSRC(visSectionObject, visRowText, visTxtBlkBkgnd).FormulaU = "0"
+                    
+        Application.EndUndoScope UndoScopeID1, True
+                        
+        'Restore diagram services
+        ActiveDocument.DiagramServicesEnabled = DiagramServices
+        
+    Next
+
+End Sub
